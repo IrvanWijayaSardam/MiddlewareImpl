@@ -47,8 +47,8 @@ func main() {
 			Format: "method=${method}, uri=${uri}, status=${status}, time=${time_rfc3339}\n",
 		}))
 
-	routes.RouteUser(e, userControll)
 	routes.RouteAuth(e, authControll)
+	routes.RouteUser(e, userControll, jwtService)
 	routes.RouteBook(e, bookControll, jwtService)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.ServerPort)).Error())

@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func RouteUser(e *echo.Echo, uc controller.UserController) {
+func RouteUser(e *echo.Echo, uc controller.UserController, jwtService service.JWTService) {
 	e.POST("/users", uc.Create())
 	e.GET("/users", uc.GetUsers())
 	e.GET("/users/:id", uc.Get())
@@ -17,7 +17,6 @@ func RouteUser(e *echo.Echo, uc controller.UserController) {
 }
 
 func RouteBook(e *echo.Echo, bc controller.BooksController, jwtService service.JWTService) {
-	// Use JWT authorization middleware to protect routes
 	e.POST("/books", bc.Create(), middleware.AuthorizeJWT(jwtService))
 	e.GET("/books", bc.GetAll(), middleware.AuthorizeJWT(jwtService))
 	e.GET("/books/:id", bc.Get(), middleware.AuthorizeJWT(jwtService))
