@@ -9,11 +9,11 @@ import (
 )
 
 func RouteUser(e *echo.Echo, uc controller.UserController, jwtService service.JWTService) {
-	e.POST("/users", uc.Create())
-	e.GET("/users", uc.GetUsers())
-	e.GET("/users/:id", uc.Get())
-	e.DELETE("/users", uc.Delete())
-	e.PUT("/users/:id", uc.Update())
+	e.POST("/users", uc.Create(), middleware.AuthorizeJWT(jwtService))
+	e.GET("/users", uc.GetUsers(), middleware.AuthorizeJWT(jwtService))
+	e.GET("/users/:id", uc.Get(), middleware.AuthorizeJWT(jwtService))
+	e.DELETE("/users", uc.Delete(), middleware.AuthorizeJWT(jwtService))
+	e.PUT("/users/:id", uc.Update(), middleware.AuthorizeJWT(jwtService))
 }
 
 func RouteBook(e *echo.Echo, bc controller.BooksController, jwtService service.JWTService) {
