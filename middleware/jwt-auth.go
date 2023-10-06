@@ -26,7 +26,7 @@ func AuthorizeJWT(jwtService service.JWTService) echo.MiddlewareFunc {
 
 	// Retrieve the secret key from the environment variables
 	secretKey := os.Getenv("SECRET_KEY")
-
+	//Test
 	return middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:  []byte(secretKey), // Use the secret key from .env
 		TokenLookup: "header:XToken",   // Look for the token in the XToken header
