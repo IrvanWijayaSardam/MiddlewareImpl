@@ -2,38 +2,46 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
+	"os"
 
 	"github.com/IrvanWijayaSardam/MiddlewareImpl/helper"
 	"github.com/IrvanWijayaSardam/MiddlewareImpl/service"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func AuthorizeJWT(jwtService service.JWTService) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			authHeader := c.Request().Header.Get("XToken")
-			if authHeader == "" {
-				response := helper.BuildErrorResponse("Failed to process request", "No Token Found!", nil)
-				return c.JSON(http.StatusBadRequest, response)
+	// Load environment variables from the .env file
+	if err := godotenv.Load(); err != nil {
+		// Handle error if .env file is not found or cannot be read
+		return func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				response := helper.BuildErrorResponse("Internal Server Error", err.Error(), nil)
+				return c.JSON(http.StatusInternalServerError, response)
 			}
-
-			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-			token, err := jwtService.ValidateToken(tokenString)
-			if err != nil {
-				response := helper.BuildErrorResponse("Token is not valid", err.Error(), nil)
-				return c.JSON(http.StatusUnauthorized, response)
-			}
-
-			if token.Valid {
-				claims := token.Claims.(jwt.MapClaims)
-				c.Set("userid", claims["userid"])
-				c.Set("issuer", claims["issuer"])
-				return next(c)
-			}
-
-			return c.NoContent(http.StatusUnauthorized)
 		}
 	}
+
+	// Retrieve the secret key from the environment variables
+	secretKey := os.Getenv("SECRET_KEY")
+
+	return middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:  []byte(secretKey), // Use the secret key from .env
+		TokenLookup: "header:XToken",   // Look for the token in the XToken header
+		SuccessHandler: func(c echo.Context) {
+			user := c.Get("user").(*jwt.Token)
+			claims := user.Claims.(jwt.MapClaims)
+			c.Set("userid", claims["sub"]) // Change "userid" to match your claim key
+			c.Set("issuer", claims["iss"]) // Change "issuer" to match your claim key
+		},
+		ErrorHandler: func(err error) error {
+			if echoErr, ok := err.(*echo.HTTPError); ok {
+				response := helper.BuildErrorResponse("Token is not valid", echoErr.Message.(string), nil)
+				return echo.NewHTTPError(http.StatusUnauthorized, response)
+			}
+			return err
+		},
+	})
 }
